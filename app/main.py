@@ -1,15 +1,8 @@
 # Uncomment this to pass the first stage
 import socket
+import threading
 
-
-def main():
-    # You can use print statements as follows for debugging, they'll be visible when running tests.
-    print("Logs from your program will appear here!")
-
-    # Uncomment this to pass the first stage
-    server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
-    conn, addr = server_socket.accept() # wait for client
-
+def handle_client(conn):
     # request ok response
     request_ok = b"HTTP/1.1 200 OK\r\n\r\n"
 
@@ -41,7 +34,7 @@ def main():
     elif request_target == "/user-agent":
         # retrieve user agent
         request_components = received_data.split("\r\n")
-        user_agent = [component for component in request_components if "User-Agent" in component][0]
+        user_agent = [component for component in request_components if "User-Agent: " in component][0]
         user_agent = user_agent.split(": ")[1]
 
         # status code
@@ -57,6 +50,19 @@ def main():
 
     else:
         conn.sendall(request_not_found)
+
+
+def main():
+    # You can use print statements as follows for debugging, they'll be visible when running tests.
+    print("Logs from your program will appear here!")
+
+    # Uncomment this to pass the first stage
+    server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
+
+    while True:
+        conn, addr = server_socket.accept() # wait for client.
+        client_thread = threading.Thread(target=handle_client, args=(conn,))
+        client_thread.start()
 
 
 if __name__ == "__main__":

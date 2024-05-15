@@ -13,11 +13,13 @@ def handle_client(conn):
     received_data = conn.recv(1024).decode("utf-8")
     request_target = received_data.split()[1]
 
-    # check if request target is /test
+    # check if request target is /
     if request_target == "/":
         conn.sendall(request_ok)
 
-    elif request_target.startswith("/echo"):
+    # check if request target is /echo
+    elif request_target.startswith("/echo/"):
+        # retrieve request string
         request_string = request_target[6:]
 
         # status code
@@ -31,6 +33,7 @@ def handle_client(conn):
         response = f"{status_code}{content_type}{content_length}\r\n{request_string}"
         conn.sendall(response.encode("utf-8"))
 
+    # check if request target is /user-agent
     elif request_target == "/user-agent":
         # retrieve user agent
         request_components = received_data.split("\r\n")
@@ -48,6 +51,22 @@ def handle_client(conn):
         response = f"{status_code}{content_type}{content_length}\r\n{user_agent}"
         conn.sendall(response.encode("utf-8"))
 
+    elif request_target.startswith("/files/"):
+        # retrieve file name
+        request_file = request_target[7:]
+
+        # status code
+        status_code = "HTTP/1.1 200 OK\r\n"
+
+        # response headers
+        content_type = "Content-Type: application/octet-stream\r\n"
+        content_length = f"Content-Length: {len(request_string)}\r\n"
+
+        #response
+        response = f"{status_code}{content_type}{content_length}\r\n{request_file}"
+        conn.sendall(response.encode("utf-8"))
+
+    # return 404 if request target is not found
     else:
         conn.sendall(request_not_found)
 
@@ -59,6 +78,7 @@ def main():
     # Uncomment this to pass the first stage
     server_socket = socket.create_server(("localhost", 4221), reuse_port=True)
 
+    # assign a new thread to handle each concurrent client
     while True:
         conn, addr = server_socket.accept() # wait for client.
         client_thread = threading.Thread(target=handle_client, args=(conn,))

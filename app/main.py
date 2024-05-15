@@ -25,7 +25,17 @@ def main():
         conn.sendall(request_ok)
     elif request_target.startswith("/echo"):
         request_string = request_target[6:]
-        conn.sendall(f"HTTP/1.1 200 OK\r\nContent-Length: {len(request_string)}\r\n\r\n{request_string}".encode("utf-8"))
+
+        # status code
+        status_code = "HTTP/1.1 200 OK\r\n"
+
+        # response headers
+        content_type = "Content-Type: text/plain\r\n"
+        content_length = f"Content-Length: {len(request_string)}\r\n"
+
+        #response
+        response = f"{status_code}{content_type}{content_length}\r\n{request_string}"
+        conn.sendall(response.encode("utf-8"))
     else:
         conn.sendall(request_not_found)
 

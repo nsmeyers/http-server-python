@@ -12,6 +12,7 @@ def handle_client(conn, args):
 
     # receive data
     received_data = conn.recv(1024).decode("utf-8")
+    request_method = received_data.split()[0]
     request_target = received_data.split()[1]
 
     # check if request target is /
@@ -57,28 +58,41 @@ def handle_client(conn, args):
         request_file = request_target[7:]
         directory = args.directory
 
-        # open file
-        try:
-            with open(f"{directory}/{request_file}", "rb") as file:
-                request_file = file.read().decode("utf-8")
-        except FileNotFoundError:
-            conn.sendall(request_not_found)
-            return
+        if request_method == "GET":
+            # open file
+            try:
+                with open(f"{directory}/{request_file}", "rb") as file:
+                    request_file = file.read().decode("utf-8")
+            except FileNotFoundError:
+                conn.sendall(request_not_found)
+                return
 
-        # status code
-        status_code = "HTTP/1.1 200 OK\r\n"
+            # status code
+            status_code = "HTTP/1.1 200 OK\r\n"
 
-        # response headers
-        content_type = "Content-Type: application/octet-stream\r\n"
-        content_length = f"Content-Length: {len(request_file)}\r\n"
+            # response headers
+            content_type = "Content-Type: application/octet-stream\r\n"
+            content_length = f"Content-Length: {len(request_file)}\r\n"
 
-        #response
-        response = f"{status_code}{content_type}{content_length}\r\n{request_file}"
-        conn.sendall(response.encode("utf-8"))
+            #response
+            response = f"{status_code}{content_type}{content_length}\r\n{request_file}"
+            conn.sendall(response.encode("utf-8"))
+
+        elif request_method == "POST":
+            # open file
+            with open(f"{directory}/{request_file}", "wb") as file:
+                file.write(received_data.split("\r\n\r\n")[1].encode("utf-8"))
+
+            # status code
+            status_code = "HTTP/1.1 201 OK\r\n"
+
+            conn.sendall(status_code.encode("utf-8"))
+
 
     # return 404 if request target is not found
     else:
         conn.sendall(request_not_found)
+    return
 
 
 def main():

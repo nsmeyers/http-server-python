@@ -41,7 +41,7 @@ def main():
     elif request_target == "/user-agent":
         # retrieve user agent
         request_components = received_data.split("\r\n")
-        user_agent = request_components.where(lambda x: x.startswith("User-Agent: ")).first()
+        user_agent = [component for component in request_components if "User-Agent" in component][0]
         user_agent = user_agent.split(": ")[1]
 
         # status code

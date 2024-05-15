@@ -62,7 +62,8 @@ def files(conn, args, request_target, request_method, received_data, request_not
             with open(f"{directory}/{request_file}", "rb") as file:
                 request_file = file.read().decode("utf-8")
         except FileNotFoundError:
-            conn.sendall(request_not_found)
+            response = request_not_found.encode("utf-8")
+            conn.sendall(response)
             return
 
         # response headers

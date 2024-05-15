@@ -1,8 +1,9 @@
 # Uncomment this to pass the first stage
+import argparse
 import socket
 import threading
 
-def handle_client(conn):
+def handle_client(conn, args):
     # request ok response
     request_ok = b"HTTP/1.1 200 OK\r\n\r\n"
 
@@ -52,8 +53,13 @@ def handle_client(conn):
         conn.sendall(response.encode("utf-8"))
 
     elif request_target.startswith("/files/"):
-        # retrieve file name
+        # retrieve file name and directory
         request_file = request_target[7:]
+        directory = args.directory
+
+        # open file
+        with open(f"{directory}/{request_file}", "rb") as file:
+            request_file = file.read()
 
         # status code
         status_code = "HTTP/1.1 200 OK\r\n"
@@ -72,6 +78,10 @@ def handle_client(conn):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--directory", help="Directory to serve files from")
+    args = parser.parse_args()
+
     # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!")
 
@@ -81,7 +91,7 @@ def main():
     # assign a new thread to handle each concurrent client
     while True:
         conn, addr = server_socket.accept() # wait for client.
-        client_thread = threading.Thread(target=handle_client, args=(conn,))
+        client_thread = threading.Thread(target=handle_client, args=(conn, args))
         client_thread.start()
 
 

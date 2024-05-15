@@ -58,8 +58,12 @@ def handle_client(conn, args):
         directory = args.directory
 
         # open file
-        with open(f"{directory}/{request_file}", "rb") as file:
-            request_file = file.read().decode("utf-8")
+        try:
+            with open(f"{directory}/{request_file}", "rb") as file:
+                request_file = file.read().decode("utf-8")
+        except FileNotFoundError:
+            conn.sendall(request_not_found)
+            return
 
         # status code
         status_code = "HTTP/1.1 200 OK\r\n"

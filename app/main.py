@@ -60,7 +60,7 @@ def handle_client(conn):
 
         # response headers
         content_type = "Content-Type: application/octet-stream\r\n"
-        content_length = f"Content-Length: {len(request_string)}\r\n"
+        content_length = f"Content-Length: {len(request_file)}\r\n"
 
         #response
         response = f"{status_code}{content_type}{content_length}\r\n{request_file}"

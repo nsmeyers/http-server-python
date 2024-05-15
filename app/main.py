@@ -84,7 +84,7 @@ def handle_client(conn, args):
                 file.write(received_data.split("\r\n\r\n")[1].encode("utf-8"))
 
             # status code
-            status_code = "HTTP/1.1 201 OK\r\n"
+            status_code = "HTTP/1.1 201 OK\r\n\r\n"
 
             conn.sendall(status_code.encode("utf-8"))
 

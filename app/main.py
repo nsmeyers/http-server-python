@@ -23,6 +23,9 @@ def main():
     # check if request target is /test
     if request_target == "/":
         conn.sendall(request_ok)
+    elif request_target.startswith("/echo"):
+        request_string = request_target[6:]
+        conn.sendall(f"HTTP/1.1 200 OK\r\nContent-Length: {len(request_string)}\r\n\r\n{request_string}".encode("utf-8"))
     else:
         conn.sendall(request_not_found)
 

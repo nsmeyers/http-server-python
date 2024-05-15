@@ -4,10 +4,10 @@ import socket
 import threading
 
 # request ok status code
-request_ok = b"HTTP/1.1 200 OK\r\n"
+request_ok = "HTTP/1.1 200 OK\r\n"
 
 # request not found status code
-request_not_found = b"HTTP/1.1 404 Not Found\r\n"
+request_not_found = "HTTP/1.1 404 Not Found\r\n"
 
 # response headers
 text_plain_type = "Content-Type: text/plain\r\n"
@@ -15,12 +15,14 @@ text_plain_type = "Content-Type: text/plain\r\n"
 
 def root(conn):
     # response
-    conn.sendall(request_ok + b"\r\n")
+    response = f"{request_ok}\r\nHello, World!"
+    conn.sendall(response.encode("utf-8"))
 
 
 def not_found(conn):
     # response
-    conn.sendall(request_not_found)
+    response = f"{request_not_found}\r\n"
+    conn.sendall(response.encode("utf-8"))
 
 
 def echo(conn, request_target):

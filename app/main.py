@@ -16,9 +16,6 @@ def main():
     # request not found response
     request_not_found = b"HTTP/1.1 404 Not Found\r\n\r\n"
 
-    # send response
-    conn.sendall(request_ok)
-
     # receive data
     received_data = conn.recv(1024).decode("utf-8")
     request_target = received_data.split()[1]

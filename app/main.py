@@ -3,9 +3,86 @@ import argparse
 import socket
 import threading
 
+# request ok status code
+request_ok = b"HTTP/1.1 200 OK\r\n"
+
+# request not found status code
+request_not_found = b"HTTP/1.1 404 Not Found\r\n"
+
+# response headers
+text_plain_type = "Content-Type: text/plain\r\n"
+
+
+def root(conn):
+    # response
+    conn.sendall(request_ok + b"\r\n")
+
+
+def not_found(conn):
+    # response
+    conn.sendall(request_not_found)
+
+
+def echo(conn, request_target):
+    # retrieve request string
+    request_string = request_target[6:]
+
+    # response headers
+    content_length = f"Content-Length: {len(request_string)}\r\n"
+
+    #response
+    response = f"{request_ok}{text_plain_type}{content_length}\r\n{request_string}"
+    conn.sendall(response.encode("utf-8"))
+
+
+def user_agent(conn, received_data):
+    # retrieve user agent
+    request_components = received_data.split("\r\n")
+    user_agent = [component for component in request_components if "User-Agent: " in component][0]
+    user_agent = user_agent.split(": ")[1]
+
+    # response headers
+    content_length = f"Content-Length: {len(user_agent)}\r\n"
+
+    #response
+    response = f"{request_ok}{text_plain_type}{content_length}\r\n{user_agent}"
+    conn.sendall(response.encode("utf-8"))
+
+
+def files(conn, args, request_target, request_method, received_data, request_not_found):
+    # retrieve file name and directory
+    request_file = request_target[7:]
+    directory = args.directory
+
+    if request_method == "GET":
+        # open file
+        try:
+            with open(f"{directory}/{request_file}", "rb") as file:
+                request_file = file.read().decode("utf-8")
+        except FileNotFoundError:
+            conn.sendall(request_not_found)
+            return
+
+        # response headers
+        content_type = "Content-Type: application/octet-stream\r\n"
+        content_length = f"Content-Length: {len(request_file)}\r\n"
+
+        #response
+        response = f"{request_ok}{content_type}{content_length}\r\n{request_file}"
+        conn.sendall(response.encode("utf-8"))
+
+    elif request_method == "POST":
+        # open file
+        with open(f"{directory}/{request_file}", "wb") as file:
+            file.write(received_data.split("\r\n\r\n")[1].encode("utf-8"))
+
+        # status code
+        status_code = "HTTP/1.1 201 Created\r\n\r\n"
+
+        conn.sendall(status_code.encode("utf-8"))
+
+
 def handle_client(conn, args):
-    # request ok response
-    request_ok = b"HTTP/1.1 200 OK\r\n\r\n"
 
     # request not found response
     request_not_found = b"HTTP/1.1 404 Not Found\r\n\r\n"
@@ -17,81 +94,23 @@ def handle_client(conn, args):
 
     # check if request target is /
     if request_target == "/":
-        conn.sendall(request_ok)
+        root(conn)
 
     # check if request target is /echo
     elif request_target.startswith("/echo/"):
-        # retrieve request string
-        request_string = request_target[6:]
-
-        # status code
-        status_code = "HTTP/1.1 200 OK\r\n"
-
-        # response headers
-        content_type = "Content-Type: text/plain\r\n"
-        content_length = f"Content-Length: {len(request_string)}\r\n"
-
-        #response
-        response = f"{status_code}{content_type}{content_length}\r\n{request_string}"
-        conn.sendall(response.encode("utf-8"))
+        echo(conn, request_target)
+        
 
     # check if request target is /user-agent
     elif request_target == "/user-agent":
-        # retrieve user agent
-        request_components = received_data.split("\r\n")
-        user_agent = [component for component in request_components if "User-Agent: " in component][0]
-        user_agent = user_agent.split(": ")[1]
-
-        # status code
-        status_code = "HTTP/1.1 200 OK\r\n"
-
-        # response headers
-        content_type = "Content-Type: text/plain\r\n"
-        content_length = f"Content-Length: {len(user_agent)}\r\n"
-
-        #response
-        response = f"{status_code}{content_type}{content_length}\r\n{user_agent}"
-        conn.sendall(response.encode("utf-8"))
+        user_agent(conn, received_data)
 
     elif request_target.startswith("/files/"):
-        # retrieve file name and directory
-        request_file = request_target[7:]
-        directory = args.directory
-
-        if request_method == "GET":
-            # open file
-            try:
-                with open(f"{directory}/{request_file}", "rb") as file:
-                    request_file = file.read().decode("utf-8")
-            except FileNotFoundError:
-                conn.sendall(request_not_found)
-                return
-
-            # status code
-            status_code = "HTTP/1.1 200 OK\r\n"
-
-            # response headers
-            content_type = "Content-Type: application/octet-stream\r\n"
-            content_length = f"Content-Length: {len(request_file)}\r\n"
-
-            #response
-            response = f"{status_code}{content_type}{content_length}\r\n{request_file}"
-            conn.sendall(response.encode("utf-8"))
-
-        elif request_method == "POST":
-            # open file
-            with open(f"{directory}/{request_file}", "wb") as file:
-                file.write(received_data.split("\r\n\r\n")[1].encode("utf-8"))
-
-            # status code
-            status_code = "HTTP/1.1 201 Created\r\n\r\n"
-
-            conn.sendall(status_code.encode("utf-8"))
-
+        files(conn, args, request_target, request_method, received_data, request_not_found)
 
     # return 404 if request target is not found
     else:
-        conn.sendall(request_not_found)
+        not_found(conn)
     return
 
 

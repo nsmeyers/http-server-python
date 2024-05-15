@@ -59,7 +59,7 @@ def handle_client(conn, args):
 
         # open file
         with open(f"{directory}/{request_file}", "rb") as file:
-            request_file = file.read()
+            request_file = file.read().decode("utf-8")
 
         # status code
         status_code = "HTTP/1.1 200 OK\r\n"
